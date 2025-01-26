@@ -1,16 +1,17 @@
 const mongoose = require("mongoose")
 const validator = require("validator")
+const jwt = require("jsonwebtoken")
+const {jwtSecretKey } = require("../utils/constants")
+const bcrypt = require("bcrypt")
 
 const userSchema = new mongoose.Schema(
     {
         firstName : {type : String,
-            trim : true,
-            maxLength : 100
+            trim : true
             
         },
         lastName : {type : String,
-            trim : true,
-            maxLength : 100
+            trim : true
         },
         email : {
             type : String,
@@ -38,8 +39,7 @@ const userSchema = new mongoose.Schema(
         },
         skills : {type : [String]},
         about:{
-            String,
-            maxLength : 100
+           type : String
         },
         photoUrl : {
             type : String,
@@ -54,6 +54,19 @@ const userSchema = new mongoose.Schema(
     timestamps : true
     })
 
-    const User = new mongoose.Model('User', userSchema)
+    userSchema.methods.getJwt =  async function () {
+        const existingUser = this
+        const token =  await jwt.sign({_id : existingUser._id}, jwtSecretKey, {
+            expiresIn : '7d'
+        }) 
+        return token
+    }
+
+    userSchema.methods.comparePassword = async function (userEnteredPassword) {
+        const existingUser = this
+        return await bcrypt.compare(userEnteredPassword, existingUser.password)
+    }
+
+    const User = new mongoose.model('User', userSchema)
 
     module.exports = User
